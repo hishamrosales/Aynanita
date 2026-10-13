@@ -1,0 +1,11 @@
+<Router AppAssembly="@typeof(MauiProgram).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div class="fiori-empty">La página solicitada no existe. <a href="/">Volver al listado</a></div>
+        </LayoutView>
+    </NotFound>
+</Router>

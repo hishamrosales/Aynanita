@@ -1,0 +1,139 @@
+@page "/pokemon/nuevo"
+@inject PokemonApiService Api
+@inject NavigationManager Nav
+
+<div class="page-header">
+    <button class="btn btn--transparent" @onclick="Cancelar">← Regresar al listado</button>
+</div>
+
+<section class="card form-card">
+    <h1>Nuevo Pokémon</h1>
+
+    <EditForm EditContext="_ctx" OnValidSubmit="GuardarAsync" OnInvalidSubmit="AlEnvioInvalido">
+        <DataAnnotationsValidator />
+
+        @if (_intentoInvalido)
+        {
+            <div class="message message--error">
+                <strong>Envío inválido.</strong> Corrige los siguientes errores:
+                <ValidationSummary />
+            </div>
+        }
+        @if (_error is not null)
+        {
+            <div class="message message--error">@_error</div>
+        }
+
+        <div class="form-grid">
+            <div class="field">
+                <label for="nombre">Nombre *</label>
+                <InputText id="nombre" class="input" @bind-Value="_modelo.Nombre" />
+                <ValidationMessage For="() => _modelo.Nombre" />
+            </div>
+
+            <div class="field">
+                <label for="tipo">Tipo *</label>
+                <InputSelect id="tipo" class="input" @bind-Value="_modelo.Tipo">
+                    <option value="">— Selecciona —</option>
+                    @foreach (var t in Catalogos.Tipos) { <option value="@t">@t</option> }
+                </InputSelect>
+                <ValidationMessage For="() => _modelo.Tipo" />
+            </div>
+
+            <div class="field">
+                <label for="rareza">Rareza *</label>
+                <InputSelect id="rareza" class="input" @bind-Value="_modelo.Rareza">
+                    <option value="">— Selecciona —</option>
+                    @foreach (var r in Catalogos.Rarezas) { <option value="@r">@r</option> }
+                </InputSelect>
+                <ValidationMessage For="() => _modelo.Rareza" />
+            </div>
+
+            <div class="field">
+                <label for="estado">Estado *</label>
+                <InputSelect id="estado" class="input" @bind-Value="_modelo.Estado">
+                    <option value="">— Selecciona —</option>
+                    @foreach (var e in Catalogos.Estados) { <option value="@e">@e</option> }
+                </InputSelect>
+                <ValidationMessage For="() => _modelo.Estado" />
+            </div>
+
+            <div class="field">
+                <label for="hp">HP (1–300) *</label>
+                <InputNumber id="hp" class="input" @bind-Value="_modelo.Hp" ParsingErrorMessage="Los HP deben ser un número entero." />
+                <ValidationMessage For="() => _modelo.Hp" />
+            </div>
+        </div>
+
+        <h3 class="section-title">Movimiento inicial (opcional)</h3>
+        <div class="form-grid">
+            <div class="field">
+                <label for="movnombre">Nombre del movimiento</label>
+                <InputText id="movnombre" class="input" @bind-Value="_modelo.MovimientoNombre" />
+                <ValidationMessage For="() => _modelo.MovimientoNombre" />
+            </div>
+            <div class="field">
+                <label for="movpoder">Poder (0–250)</label>
+                <InputNumber id="movpoder" class="input" @bind-Value="_modelo.MovimientoPoder" ParsingErrorMessage="El poder debe ser un número entero." />
+                <ValidationMessage For="() => _modelo.MovimientoPoder" />
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn--emphasized" disabled="@_guardando">@(_guardando ? "Guardando…" : "Guardar")</button>
+            <button type="button" class="btn" @onclick="Cancelar">Cancelar</button>
+            <button type="button" class="btn btn--transparent" @onclick="CargarEjemploInvalido">Demostrar envío inválido</button>
+        </div>
+    </EditForm>
+</section>
+
+@code {
+    private PokemonCrearDto _modelo = new();
+    private EditContext _ctx = default!;
+    private bool _guardando;
+    private bool _intentoInvalido;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        _ctx = new EditContext(_modelo);
+    }
+
+    private void AlEnvioInvalido() => _intentoInvalido = true;
+
+    // Rellena datos incorrectos y dispara la validación para mostrar los mensajes en pantalla.
+    private void CargarEjemploInvalido()
+    {
+        _modelo.Nombre = "A";
+        _modelo.Tipo = string.Empty;
+        _modelo.Rareza = string.Empty;
+        _modelo.Estado = string.Empty;
+        _modelo.Hp = 999;
+        _modelo.MovimientoNombre = new string('x', 40);
+        _modelo.MovimientoPoder = 400;
+        _error = null;
+        _intentoInvalido = !_ctx.Validate();
+    }
+
+    private async Task GuardarAsync()
+    {
+        _guardando = true;
+        _error = null;
+        _intentoInvalido = false;
+        try
+        {
+            var creado = await Api.CrearAsync(_modelo);
+            Nav.NavigateTo($"/?creado={creado.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo guardar en el backend: {ex.Message}";
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+
+    private void Cancelar() => Nav.NavigateTo("/");
+}

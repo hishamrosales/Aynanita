@@ -1,0 +1,68 @@
+@* Componente del master-detail: recibe el Pokémon seleccionado por CascadingValue (Name="PokemonSeleccionado") *@
+
+@if (Pokemon is null)
+{
+    <div class="fiori-empty">Selecciona un Pokémon de la lista para ver sus movimientos.</div>
+}
+else
+{
+    <section class="card ficha">
+        <div class="ficha__header">
+            <div class="avatar avatar--lg">@Pokemon.Nombre[0]</div>
+            <div>
+                <h2 class="ficha__nombre">@Pokemon.Nombre</h2>
+                <div class="chips">
+                    <EstadoChip Texto="@Pokemon.Tipo" Modo="info" />
+                    <EstadoChip Texto="@Pokemon.Rareza" Modo="neutral" />
+                    <EstadoChip Texto="@Pokemon.Estado" />
+                </div>
+            </div>
+        </div>
+
+        <div class="kpis">
+            <div class="kpi"><span class="kpi__valor">@Pokemon.Hp</span><span class="kpi__label">HP</span></div>
+            <div class="kpi"><span class="kpi__valor">@Pokemon.TotalMovimientos</span><span class="kpi__label">Total movimientos</span></div>
+            <div class="kpi"><span class="kpi__valor">@Pokemon.PoderTotal</span><span class="kpi__label">Poder total</span></div>
+            <div class="kpi"><span class="kpi__valor">@Pokemon.PoderPromedio</span><span class="kpi__label">Poder promedio</span></div>
+        </div>
+
+        <h3 class="section-title">Movimientos (@Pokemon.TotalMovimientos)</h3>
+        @if (Pokemon.Movimientos.Count == 0)
+        {
+            <div class="fiori-empty fiori-empty--small">Este Pokémon aún no tiene movimientos.</div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Movimiento</th><th>Tipo</th><th class="num">Poder</th><th class="num">Precisión</th></tr></thead>
+                    <tbody>
+                    @foreach (var m in Pokemon.Movimientos)
+                    {
+                        <tr>
+                            <td>@m.Nombre</td>
+                            <td><EstadoChip Texto="@m.Tipo" Modo="info" /></td>
+                            <td class="num">@m.Poder</td>
+                            <td class="num">@m.Precision%</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (MostrarEnlace)
+        {
+            <div class="actions">
+                <a class="btn btn--emphasized" href="/pokemon/@Pokemon.Id">Ver detalle completo</a>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    [CascadingParameter(Name = "PokemonSeleccionado")]
+    public PokemonDto? Pokemon { get; set; }
+
+    [Parameter] public bool MostrarEnlace { get; set; }
+}

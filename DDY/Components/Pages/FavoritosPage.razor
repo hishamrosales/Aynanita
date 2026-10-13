@@ -1,0 +1,74 @@
+@page "/favoritos"
+@inject PokemonApiService Api
+@inject FavoritosService Favoritos
+
+<div class="page-header">
+    <h1>Favoritos</h1>
+    <a class="btn" href="/">← Regresar al listado</a>
+</div>
+
+@if (_error is not null)
+{
+    <div class="message message--error">@_error</div>
+}
+
+@if (_cargando)
+{
+    <div class="fiori-empty">Cargando…</div>
+}
+else if (_favoritos.Count == 0)
+{
+    <div class="fiori-empty">Aún no tienes favoritos. Márcalos con ☆ desde el listado o el detalle.</div>
+}
+else
+{
+    <section class="master master--wide">
+        @foreach (var p in _favoritos)
+        {
+            <article class="list-item">
+                <div class="avatar">@p.Nombre[0]</div>
+                <div class="list-item__body">
+                    <div class="list-item__title">@p.Nombre</div>
+                    <div class="chips">
+                        <EstadoChip Texto="@p.Tipo" Modo="info" />
+                        <EstadoChip Texto="@p.Estado" />
+                    </div>
+                    <div class="list-item__meta">@p.TotalMovimientos movimientos · poder total @p.PoderTotal</div>
+                </div>
+                <div class="list-item__actions">
+                    <a class="btn" href="/pokemon/@p.Id">Ver detalle</a>
+                    <button class="btn btn--transparent" @onclick="() => Quitar(p)">Quitar</button>
+                </div>
+            </article>
+        }
+    </section>
+}
+
+@code {
+    private List<PokemonDto> _favoritos = new();
+    private bool _cargando = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var todos = await Api.ObtenerPokemonAsync();
+            _favoritos = todos.Where(p => Favoritos.EsFavorito(p.Id)).ToList();
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo consultar la API ({ex.Message}).";
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private void Quitar(PokemonDto p)
+    {
+        Favoritos.Alternar(p.Id);
+        _favoritos.Remove(p);
+    }
+}

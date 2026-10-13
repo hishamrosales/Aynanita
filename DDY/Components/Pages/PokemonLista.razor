@@ -1,0 +1,139 @@
+@page "/"
+@inject PokemonApiService Api
+@inject FavoritosService Favoritos
+
+<div class="page-header">
+    <h1>Pokémon</h1>
+    <a class="btn btn--emphasized" href="/pokemon/nuevo">Nuevo Pokémon</a>
+</div>
+
+@if (Creado is not null && _lista.Any(p => p.Id == Creado))
+{
+    <div class="message message--success">Pokémon creado y guardado en el backend correctamente.</div>
+}
+@if (_error is not null)
+{
+    <div class="message message--error">@_error <button class="btn btn--transparent" @onclick="CargarAsync">Reintentar</button></div>
+}
+
+<div class="toolbar">
+    <input class="input" placeholder="Buscar por nombre…" @bind="_busqueda" @bind:event="oninput" @onkeydown="TeclaBusqueda" />
+    <select class="input" @bind="_tipo">
+        <option value="">Todos los tipos</option>
+        @foreach (var t in Catalogos.Tipos) { <option value="@t">@t</option> }
+    </select>
+    <button class="btn" @onclick="CargarAsync">Aplicar $filter</button>
+</div>
+
+<div class="master-detail">
+    <section class="master">
+        @if (_cargando)
+        {
+            <div class="fiori-empty">Cargando desde la API OData…</div>
+        }
+        else if (_lista.Count == 0 && _error is null)
+        {
+            <div class="fiori-empty">No hay Pokémon que coincidan con el filtro.</div>
+        }
+        else
+        {
+            @foreach (var p in _lista)
+            {
+                <article class="list-item @(_seleccionado?.Id == p.Id ? "list-item--selected" : "")" @onclick="() => Seleccionar(p)">
+                    <div class="avatar">@p.Nombre[0]</div>
+                    <div class="list-item__body">
+                        <div class="list-item__title">@p.Nombre</div>
+                        <div class="chips">
+                            <EstadoChip Texto="@p.Tipo" Modo="info" />
+                            <EstadoChip Texto="@p.Estado" />
+                        </div>
+                        <div class="list-item__meta">@p.TotalMovimientos movimientos · poder total @p.PoderTotal</div>
+                    </div>
+                    <div class="list-item__actions" @onclick:stopPropagation="true">
+                        <button class="btn btn--icon" title="Favorito" @onclick="() => Favoritos.Alternar(p.Id)">@(Favoritos.EsFavorito(p.Id) ? "★" : "☆")</button>
+                        @if (_confirmarId == p.Id)
+                        {
+                            <button class="btn btn--negative" @onclick="() => EliminarAsync(p)">Confirmar</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn--transparent" @onclick="() => _confirmarId = p.Id">Eliminar</button>
+                        }
+                    </div>
+                </article>
+            }
+        }
+    </section>
+
+    <aside class="detail">
+        <CascadingValue Value="_seleccionado" Name="PokemonSeleccionado">
+            <PokemonFicha MostrarEnlace="true" />
+        </CascadingValue>
+    </aside>
+</div>
+
+@code {
+    [Parameter, SupplyParameterFromQuery(Name = "creado")] public int? Creado { get; set; }
+
+    private List<PokemonDto> _lista = new();
+    private PokemonDto? _seleccionado;
+    private bool _cargando;
+    private string? _error;
+    private string _busqueda = string.Empty;
+    private string _tipo = string.Empty;
+    private int? _confirmarId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+        if (Creado is not null)
+            _seleccionado = _lista.FirstOrDefault(p => p.Id == Creado);
+    }
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+        _error = null;
+        try
+        {
+            _lista = await Api.ObtenerPokemonAsync(_tipo, _busqueda);
+            if (_seleccionado is not null)
+                _seleccionado = _lista.FirstOrDefault(p => p.Id == _seleccionado.Id);
+        }
+        catch (Exception ex)
+        {
+            _lista = new();
+            _error = $"No se pudo consultar la API ({ex.Message}). ¿Está ejecutándose DDY.Api en el puerto 5080?";
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private async Task TeclaBusqueda(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await CargarAsync();
+    }
+
+    private void Seleccionar(PokemonDto p)
+    {
+        _seleccionado = p;
+        _confirmarId = null;
+    }
+
+    private async Task EliminarAsync(PokemonDto p)
+    {
+        try
+        {
+            await Api.EliminarAsync(p.Id);
+            if (_seleccionado?.Id == p.Id) _seleccionado = null;
+            _confirmarId = null;
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo eliminar: {ex.Message}";
+        }
+    }
+}

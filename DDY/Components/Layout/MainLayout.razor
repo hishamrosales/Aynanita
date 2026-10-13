@@ -1,0 +1,18 @@
+@inherits LayoutComponentBase
+
+<header class="shellbar">
+    <a class="shellbar__brand" href="/">
+        <span class="shellbar__logo" aria-hidden="true">●</span>
+        <span class="shellbar__title">Pokédex</span>
+        <span class="shellbar__subtitle">Servicio OData</span>
+    </a>
+    <nav class="shellbar__nav">
+        <NavLink class="shellbar__link" href="/" Match="NavLinkMatch.All">Pokémon</NavLink>
+        <NavLink class="shellbar__link" href="/favoritos">Favoritos</NavLink>
+        <NavLink class="shellbar__link" href="/pokemon/nuevo">Nuevo</NavLink>
+    </nav>
+</header>
+
+<main class="page">
+    @Body
+</main>

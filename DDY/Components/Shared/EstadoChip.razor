@@ -1,0 +1,21 @@
+<span class="chip @Clase">@Texto</span>
+
+@code {
+    [Parameter, EditorRequired] public string Texto { get; set; } = string.Empty;
+
+    /// <summary>"estado" (semántico), "info" (neutro/azul) o "neutral".</summary>
+    [Parameter] public string Modo { get; set; } = "estado";
+
+    private string Clase => Modo switch
+    {
+        "info" => "chip--info",
+        "estado" => Texto switch
+        {
+            "Saludable" => "chip--success",
+            "Cansado" => "chip--warning",
+            "Herido" => "chip--error",
+            _ => "chip--neutral"
+        },
+        _ => "chip--neutral"
+    };
+}

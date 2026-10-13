@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DDY.Api/DDY.Api.csproj" />
+  <Project Path="DDY/DDY.csproj" />
+</Solution>

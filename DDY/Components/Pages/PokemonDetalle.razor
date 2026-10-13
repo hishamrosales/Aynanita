@@ -1,0 +1,77 @@
+@page "/pokemon/{Id:int}"
+@inject PokemonApiService Api
+@inject FavoritosService Favoritos
+@inject NavigationManager Nav
+
+<div class="page-header">
+    <button class="btn btn--transparent" @onclick="Regresar">← Regresar al listado</button>
+    @if (_pokemon is not null)
+    {
+        <button class="btn" @onclick="AlternarFavorito">@(Favoritos.EsFavorito(_pokemon.Id) ? "★ Quitar de favoritos" : "☆ Marcar favorito")</button>
+    }
+</div>
+
+@if (_cargando)
+{
+    <div class="fiori-empty">Cargando Pokémon #@Id…</div>
+}
+else if (_error is not null)
+{
+    <div class="message message--error">@_error <button class="btn btn--transparent" @onclick="ReintentarAsync">Reintentar</button></div>
+}
+else if (_pokemon is null)
+{
+    <div class="fiori-empty">No existe un Pokémon con Id @Id.</div>
+}
+else
+{
+    <h1 class="sr-only">@_pokemon.Nombre</h1>
+    <CascadingValue Value="_pokemon" Name="PokemonSeleccionado">
+        <PokemonFicha />
+    </CascadingValue>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PokemonDto? _pokemon;
+    private bool _cargando;
+    private string? _error;
+    private int _idCargado;
+
+    // La carga se hace aquí (no en OnInitializedAsync) para reaccionar a cambios del parámetro de ruta {Id}.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_idCargado == Id) return;
+        _idCargado = Id;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+        _error = null;
+        _pokemon = null;
+        try
+        {
+            _pokemon = await Api.ObtenerPorIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = $"No se pudo cargar el detalle ({ex.Message}).";
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private Task ReintentarAsync() => CargarAsync();
+
+    private void AlternarFavorito()
+    {
+        if (_pokemon is not null) Favoritos.Alternar(_pokemon.Id);
+    }
+
+    private void Regresar() => Nav.NavigateTo("/");
+}
